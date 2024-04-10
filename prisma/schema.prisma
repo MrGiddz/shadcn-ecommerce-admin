@@ -1,0 +1,148 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+  // provider     = "sqlite"
+}
+
+model EComStore {
+  id         String          @id @default(uuid())
+  name       String
+  userId     String
+  billboards EComBillboard[] @relation("EComStoreToBillboard")
+  categories EComCategory[]  @relation("EComStoreToCategory")
+  sizes      EComSize[]      @relation("EComStoreToSize")
+  colors     EComColor[]     @relation("EComStoreToColor")
+  products   EComProduct[]   @relation("EComStoreToProduct")
+  orders   EComOrder[]   @relation("EComStoreToOrder")
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+}
+
+model EComBillboard {
+  id         String         @id @default(uuid())
+  storeId    String
+  store      EComStore      @relation("EComStoreToBillboard", fields: [storeId], references: [id])
+  label      String
+  imageUrl   String
+  categories EComCategory[]
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([storeId])
+}
+
+model EComCategory {
+  id          String        @id @default(uuid())
+  storeId     String
+  store       EComStore     @relation("EComStoreToCategory", fields: [storeId], references: [id])
+  billboardId String
+  billboard   EComBillboard @relation(fields: [billboardId], references: [id])
+  products    EComProduct[] @relation("EComCategoryToProduct")
+  name        String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([storeId])
+  @@index([billboardId])
+}
+
+model EComSize {
+  id        String        @id @default(uuid())
+  storeId   String
+  store     EComStore     @relation("EComStoreToSize", fields: [storeId], references: [id])
+  products  EComProduct[]
+  name      String
+  value     String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([storeId])
+}
+
+model EComColor {
+  id        String        @id @default(uuid())
+  storeId   String
+  store     EComStore     @relation("EComStoreToColor", fields: [storeId], references: [id])
+  products  EComProduct[]
+  name      String
+  value     String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([storeId])
+}
+
+model EComProduct {
+  id         String       @id @default(uuid())
+  storeId    String
+  store      EComStore    @relation("EComStoreToProduct", fields: [storeId], references: [id])
+  categoryId String
+  category   EComCategory @relation("EComCategoryToProduct", fields: [categoryId], references: [id])
+  name       String
+  price      Decimal
+  isFeatured Boolean      @default(false)
+  isArchived   Boolean      @default(false)
+  sizeId     String
+  size       EComSize     @relation(fields: [sizeId], references: [id])
+  colorId    String
+  color      EComColor    @relation(fields: [colorId], references: [id])
+  images     EComImage[]
+  orderItems     EComOrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([categoryId])
+  @@index([sizeId])
+  @@index([colorId])
+}
+
+model EComImage {
+  id       String      @id @default(uuid())
+  producId String
+  product  EComProduct @relation(fields: [producId], references: [id], onDelete: Cascade)
+  url      String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([producId])
+}
+
+
+model EComOrder {
+  id String @id @default(uuid())
+  storeId String
+  store EComStore @relation("EComStoreToOrder", fields: [storeId], references: [id])
+  orderItems EComOrderItem[]
+  isPaid Boolean @default(false)
+  phone String @default("")
+  address String @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+}
+
+model EComOrderItem {
+  id String @id @default(uuid())
+  orderId String
+  order EComOrder @relation(fields: [orderId], references: [id])
+  productId String
+  product EComProduct @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+}
